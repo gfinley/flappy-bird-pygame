@@ -18,7 +18,7 @@ ANIMATION_SPEED = 0.18  # pixels per millisecond
 WIN_WIDTH = 284 * 2     # BG image size: 284x512 px; tiled twice
 WIN_HEIGHT = 512
 gamma = .8
-k = 10
+k = 11
 pp = True
 #global fail
 #global success 
@@ -68,13 +68,9 @@ class dSpace:
 
 class stateActionState:
     def __init__(self, state, action,state2):
-        self.originalStatex = state.x
-        self.originalStatey = state.y
-        self.originalStatep = state.p
+        self.originalState = state
         self.action = action
-        self.finalStatex = state2.x
-        self.finalStatey = state2.y
-        self.finalStatep = state2.p
+        self.finalState = state2
 
 #reward map 
 
@@ -106,16 +102,17 @@ def printState(state):
 
 
 def getReward(state, action, state2):
-    if (state.x,state.y,state.p,action,state2.x,state2.y,state2.p) in rewardMap:
-        temp = rewardMap[(state.x,state.y,state.p,action,state2.x,state2.y,state2.p)]
-        return temp
+    if state2 in rewardMap:
+        temp = rewardMap[state2)]
+        print("saw a reward state again"  + str(temp))
+        print(temp)
     return 0
 
 def getNextAction(state):
     flapVal = getQ(state, 1)
     noFlapVal = getQ(state, 0)
     ra = random.randrange(0,100)
-    if ra > -1:
+    if ra > 50:
         if(flapVal == noFlapVal):
             return 0
             #return random.randrange(0,2)
@@ -138,7 +135,7 @@ def getAlpha(state):
         return 1
 
 def getSample(state, action, state2):
-    temp = getReward(state,action,state2) + (gamma * maxExploreFunction(state2))    
+    temp = getReward(state,action,state2) + (gamma * getMaxQ(state2))    
     #if temp < -10:
     #print(getReward(state,action,state2))
     #print("getSample" + str(getReward(state , action,state2)) + " " + str((gamma * maxExploreFunction(state2)))) 
@@ -148,12 +145,10 @@ def getSample(state, action, state2):
 def updateQ(state,  action, state2):
     alpha = getAlpha(state)
     temp = (1-alpha) * getQ(state,action) + alpha * getSample(state,action,state2)
-    #print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
-    if temp > 1000:
-        print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
+    #print(temp)
     if temp != 0:
-        #print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
-        #print(temp)
+        print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
+        print(temp)
         changeQ(temp,state,action)
 
 def maxExploreFunction(state):
@@ -189,14 +184,14 @@ def createSuperArray(x_size, y_size, momentem_size):
     return cat 
 
 def catchDone(state,action,state2):
-    if (state.x,state.y,state.p,action,state2.x,state2.y,state2.p) not in rewardMap:
-        rewardMap[(state.x,state.y,state.p,action,state2.x,state2.y,state2.p)] = -100
+    if state2 not in rewardMap:
+        rewardMap[state2)] = -10
     print("punished")
 
 
 def catchScore(state,action,state2):
-    rewardMap[(state.x,state.y,state.p,action,state2.x,state2.y,state2.p)] = 1000
-    print("MADE IT THROUGH!!!!!!!!!!!!!!!!!!!!")
+    temp = stateActionState(state,action,state2)
+    rewardMap[(state,action,state2)] = 100
     #success = success + 1
     #counter = counter + 1
 
@@ -479,7 +474,7 @@ def frames_to_msec(frames, fps=FPS):
     frames: How many frames to convert to milliseconds.
     fps: The framerate to use for conversion.  Default: FPS.
     """
-    return 3000.0 * frames / fps
+    return 1000.0 * frames / fps
 def msec_to_frames(milliseconds, fps=FPS):
     """Convert milliseconds to frames at the specified framerate.
 
@@ -487,7 +482,7 @@ def msec_to_frames(milliseconds, fps=FPS):
     milliseconds: How many milliseconds to convert to frames.
     fps: The framerate to use for conversion.  Default: FPS.
     """
-    return fps * milliseconds / 3000.0
+    return fps * milliseconds / 1000.0
 
 global dSpaceArray 
 dSpaceArray = createSuperArray(32,32,333.3)
@@ -507,7 +502,6 @@ def main():
     fail = 0
     success = 0
     while not done2:
-        #print(rewardMap)
         display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
         pygame.display.set_caption('Pygame Flappy Bird')
         
@@ -546,6 +540,7 @@ def main():
         """
         while  not done:
             clock.tick(FPS)
+
             # Handle this 'manually'.  If we used pygame.time.set_timer(),
             # pipe addition would be messed up when paused.
             if not (paused or frame_clock % msec_to_frames(PipePair.ADD_INTERVAL)):
@@ -579,9 +574,8 @@ def main():
             # check for collisions
             pipe_collision = any(p.collides_with(bird) for p in pipes)
             if pipe_collision or 0 >= bird.y or bird.y >= WIN_HEIGHT - Bird.HEIGHT:
-                catchDone( oldState, climbing , currState)
-                updateQ(oldState, climbing ,currState)
                 done = True
+                catchDone( oldState, climbing , currState)
             if (done == True):
                 distance = pipes[-1].x - bird.x + 100
                 fail = fail + 1

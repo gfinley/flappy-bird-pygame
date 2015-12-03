@@ -115,7 +115,7 @@ def getNextAction(state):
     flapVal = getQ(state, 1)
     noFlapVal = getQ(state, 0)
     ra = random.randrange(0,100)
-    if ra > -1:
+    if ra > 5:
         if(flapVal == noFlapVal):
             return 0
             #return random.randrange(0,2)
@@ -138,7 +138,7 @@ def getAlpha(state):
         return 1
 
 def getSample(state, action, state2):
-    temp = getReward(state,action,state2) + (gamma * maxExploreFunction(state2))    
+    temp = getReward(state,action,state2) + (gamma * getMaxQ(state2))    
     #if temp < -10:
     #print(getReward(state,action,state2))
     #print("getSample" + str(getReward(state , action,state2)) + " " + str((gamma * maxExploreFunction(state2)))) 
@@ -149,11 +149,9 @@ def updateQ(state,  action, state2):
     alpha = getAlpha(state)
     temp = (1-alpha) * getQ(state,action) + alpha * getSample(state,action,state2)
     #print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
-    if temp > 1000:
-        print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
     if temp != 0:
         #print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
-        #print(temp)
+        print(temp)
         changeQ(temp,state,action)
 
 def maxExploreFunction(state):
@@ -546,6 +544,7 @@ def main():
         """
         while  not done:
             clock.tick(FPS)
+
             # Handle this 'manually'.  If we used pygame.time.set_timer(),
             # pipe addition would be messed up when paused.
             if not (paused or frame_clock % msec_to_frames(PipePair.ADD_INTERVAL)):
